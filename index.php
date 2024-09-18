@@ -19,6 +19,13 @@ class WordsFilter {
      */
     function __construct(){
         add_action('admin_menu', array($this, 'ourMenu'));
+        if(get_option('filterWordsData')) add_filter('the_content', array($this, 'filterWords'));
+    }
+
+    function filterWords($content){
+        $badWords = explode(',', get_option('filterWordsData'));
+        $badWordsTrimmed = array_map('trim', $badWords);
+        return str_ireplace($badWordsTrimmed, '*****', $content);        
     }
     
     /**
