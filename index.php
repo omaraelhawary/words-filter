@@ -10,22 +10,60 @@
 if(!defined('ABSPATH')) exit;
 
 class WordsFilter {
+
     /**
      * Constructor for the WordsFilter class.
      *
-     * Initializes the class by adding an action to the admin menu.
+     * Initializes the class by adding actions to the admin menu and admin init, 
+     * and a filter to the content if filter words data is available.
      *
      * @return void
      */
     function __construct(){
         add_action('admin_menu', array($this, 'ourMenu'));
+        add_action('admin_init', array($this, 'registerSettings'));
         if(get_option('filterWordsData')) add_filter('the_content', array($this, 'filterWords'));
     }
 
+    /**
+     * Registers the settings for the Words Filter plugin.
+     *
+     * This function is responsible for adding a settings section, registering a setting, 
+     * and adding a settings field for the replacement text.
+     *
+     * @return void
+     */
+    function registerSettings(){
+        add_settings_section( 'replacement-text-section', null, null, 'words-filter-option');
+        register_setting( 'replacementFields', 'replacementText' );
+        add_settings_field( 'replacement-text', 'Filtered Text', array($this, 'replacementFieldHTML'), 'words-filter-option', 'replacement-text-section');
+    }
+
+    /**
+     * Displays the replacement text field HTML for the Words Filter plugin.
+     *
+     * This function is responsible for rendering the replacement text field, 
+     * including the input field and a description.
+     *
+     * @return void
+     */
+    function replacementFieldHTML(){ ?>
+        
+        <input type="text" name="replacementText" value="<?php echo esc_attr(get_option('replacementText', '***')) ?>">
+        <p class="description">Leave blank to simply remove the words</p>
+    <?php }
+
+    /**
+     * Replaces bad words in a given content with a replacement text.
+     *
+     * @param string $content The content to filter.
+     * @return string The filtered content.
+     */
     function filterWords($content){
         $badWords = explode(',', get_option('filterWordsData'));
         $badWordsTrimmed = array_map('trim', $badWords);
-        return str_ireplace($badWordsTrimmed, '*****', $content);        
+        $replacementText = esc_html(get_option('replacementText', '****'));
+        return str_ireplace($badWordsTrimmed, $replacementText, $content);        
     }
     
     /**
@@ -107,10 +145,26 @@ class WordsFilter {
 
     <?php }
 
+    /**
+     * Displays the Words Filter Options page, including a form to input the replacement fields.
+     *
+     * This function is responsible for rendering the options page, including any error messages,
+     * the replacement fields form, and the submit button.
+     *
+     * @return void
+     */
     function Wordsfilteroptions(){ ?>
-
-        <h1>Options page</h1>
-
+        <div class="wrap">
+            <h1>Words Filter Options</h1>
+            <form action="options.php" method="POST">
+                <?php
+                    settings_errors();
+                    settings_fields( 'replacementFields' );
+                    do_settings_sections( 'words-filter-option' );
+                    submit_button();
+                ?>
+            </form>
+        </div>
     <?php }
 
 }
